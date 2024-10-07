@@ -111,6 +111,20 @@ elevations = np.array(elevations_filtered) - min(elevations_filtered)
 vertices_surface = np.column_stack((latitudes, longitudes, elevations))
 
 latitudes_thick, longitude_thick = thick_vertices(latitudes, longitudes, 0.2)
+
+fig = plt.figure(figsize=(18, 6))
+
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(latitudes, longitudes, elevations, c='blue', marker='o', label='original point')
+ax.scatter(latitudes_thick, longitude_thick, elevations, c='red', marker='x', label='thick point')
+ax.set_xlabel('Latitude')
+ax.set_ylabel('Longitude')
+ax.set_zlabel('Elevation') 
+ax.set_title('GPS Points')
+ax.legend()
+plt.tight_layout()
+plt.show()
+
 vertices_thick_line = np.column_stack((latitudes_thick, longitude_thick, elevations))
 
 # Remove overlapping points
