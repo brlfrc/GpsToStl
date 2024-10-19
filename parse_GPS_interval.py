@@ -80,6 +80,6 @@ class AltimetryPlotter:
             print("No selection made")
 
 # Example usage
-file_path = 'presolana/presolana.gpx'
+file_path = 'selvino/selvino.gpx'
 distances, elevation_data = parse_gps(file_path)
 plotter = AltimetryPlotter(distances, elevation_data)

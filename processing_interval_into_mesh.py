@@ -57,8 +57,8 @@ def thick_vertices(latitude, longitude, thick=0.5):
         latitude_thick[zero_indices] = latitude[zero_indices]
 
     # Handle the last point separately
-    longitude_thick_last = longitude[-1] - thick
-    latitude_thick_last = latitude[-1]
+    longitude_thick_last = longitude[-1]/ (m[-1]**2 + 1) + (latitude[-1] - q[-1] )* (m[-1] / (m[-1]**2 + 1)) 
+    latitude_thick_last = m[-1] * longitude_thick_last + q[-1]
 
     shifted_latitude = np.concatenate([latitude_thick, [latitude_thick_last]])
     shifted_longitude = np.concatenate([longitude_thick, [longitude_thick_last]])
@@ -70,32 +70,32 @@ def generate_faces(num_points):
     for i in range(num_points - 1):
         # Upper surface face
         faces.append([i, i + 1, i + num_points])
-        faces.append([i + 1, i + num_points, i + num_points + 1])
+        faces.append([i + 1, i + num_points + 1, i + num_points])
 
         # Lower surface
         faces.append([i + 2* num_points, i + 2* num_points + 1, i + 3*num_points])
-        faces.append([i + 1 + 2* num_points, i + 3 * num_points, i + 3* num_points + 1])
+        faces.append([i + 1 + 2* num_points,  i + 3* num_points + 1, i + 3 * num_points])
         
         # Side faces connecting to the projection plane
         faces.append([i, i + 1, i + 2 * num_points])
-        faces.append([i + 1, i + 2 * num_points, i + 1 + 2 * num_points])
+        faces.append([i + 1, i + 1 + 2 * num_points, i + 2 * num_points])
 
         faces.append([i + num_points, i + 1 + num_points, i + 3 * num_points])
-        faces.append([i + 1 + num_points, i + 3 * num_points, i + 1 + 3 * num_points])
+        faces.append([i + 1 + num_points, i + 1 + 3 * num_points, i + 3 * num_points])
     
     # The last faces
     faces.append([num_points-1, 2*num_points-1, 3*num_points-1])
-    faces.append([2*num_points-1, 3*num_points-1, 4*num_points-1])
+    faces.append([2*num_points-1, 4*num_points-1, 3*num_points-1])
     
     return np.array(faces)
 
-def generate_surface_mesh(subsampled_data):
-    latitudes = subsampled_data[:, 0]
-    longitudes = subsampled_data[:, 1]
+def generate_surface_mesh(subsampled_data, scale_factor):
+    latitudes = subsampled_data[:, 0] * scale_factor
+    longitudes = subsampled_data[:, 1] * scale_factor
     elevations = subsampled_data[:, 2]
     min_elevation = np.ones(len(elevations)) * np.min(elevations)
 
-    latitudes_thick, longitude_thick = thick_vertices(latitudes, longitudes, 1/5000) # Check this last value
+    latitudes_thick, longitude_thick = thick_vertices(latitudes, longitudes, 1/5000*scale_factor) # Check this last value
 
     vertices_1 = np.column_stack((latitudes, longitudes, elevations))
     vertices_2 = np.column_stack((latitudes_thick, longitude_thick, elevations))
@@ -192,4 +192,6 @@ subsampled_gps_data = subsample_gps_data(latitudes, longitudes, elevations, min_
 
 # debug_visualization(gps_data, subsampled_gps_data)
 
-surface_mesh = generate_surface_mesh(subsampled_gps_data)
+surface_mesh = generate_surface_mesh(subsampled_gps_data, scale_factor=10000)
+
+
