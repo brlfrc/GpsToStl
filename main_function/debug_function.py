@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import trimesh
 
 
 
@@ -25,4 +26,15 @@ def debug_visualization(gps_data_original, subsampled_gps_data):
     ax.legend()
 
     plt.tight_layout()
+    plt.show()
+
+
+def debug_mesh_vertices(mesh):
+    vertices = mesh.vertices
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(vertices[:,0], vertices[:,1], vertices[:,2], color='r', s=1) 
+    mesh.show(ax=ax)
+
     plt.show()

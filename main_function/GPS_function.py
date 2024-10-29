@@ -38,13 +38,14 @@ class AltimetryPlotter:
         self.span = None
         self.selection = (None, None)
         self.output_path = output_path
+        self.selected_distance = 1
         self._create_plot()
     
     def _create_plot(self):
         self.ax.plot(self.distances, self.elevations, label='Elevation Profile')
         self.ax.set_xlabel('Distance (meters)')
         self.ax.set_ylabel('Elevation (meters)')
-        self.ax.set_title('Elevation Profile with Interactive Selection')
+        self.ax.set_title('Select the interval')
         self.ax.grid(True)
         
         self.span = SpanSelector(self.ax, self.onselect, 'horizontal', useblit=True,
@@ -70,7 +71,8 @@ class AltimetryPlotter:
             print(f"Finalized selection: {xmin} to {xmax} meters")
             indices = [i for i, d in enumerate(self.distances) if xmin <= d <= xmax]
             selected_data = [self.elevation_data[i] for i in indices]
-            
+            self.selected_distance = xmax-xmin
+
             with open(self.output_path, 'w') as f:
                 for point in selected_data:
                     f.write(f"{point[0]},{point[1]},{point[2]}\n")
@@ -79,6 +81,10 @@ class AltimetryPlotter:
             plt.close(self.fig)  # Close the plot when finalized
         else:
             print("No selection made")
+    
+    def get_selected_distance(self):
+        return self.selected_distance
+
 
 
 def load_gps_data(file_path):
@@ -89,21 +95,3 @@ def load_gps_data(file_path):
             data.append((lat, lon, ele))
     
     return np.array(data)
-
-def subsample_gps_data(latitudes, longitudes, elevations,  min_distance=50, max_distance=300):
-    subsampled_data = []
-    last_point = (latitudes[0], longitudes[0], elevations[0])
-    subsampled_data.append(last_point)
-    print(f"Number of original points: {len(latitudes)}")
-
-    for i in range(1, len(latitudes)):
-        current_point = (latitudes[i], longitudes[i], elevations[i])
-        distance = haversine((last_point[0], last_point[1]), (current_point[0], current_point[1]), unit=Unit.METERS)
-        
-        if min_distance <= distance <= max_distance:
-            subsampled_data.append(current_point)
-            last_point = current_point  # Update last point
-    
-    
-    print(f"Number of subsampled points: {len(subsampled_data)}")    
-    return np.array(subsampled_data)

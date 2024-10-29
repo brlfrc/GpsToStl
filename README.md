@@ -1,14 +1,20 @@
 # GpsToStl
-GpsToStl is a Python script designed to transform GPS data files in GPX format into 3D models in STL format. It offers a streamlined solution for converting GPS tracks into visually appealing 3D representations, facilitating data analysis and visualization tasks. These 3D models can be further utilized for various applications, including 3D printing.
+GpsToStl is a Python script designed to convert GPS data files in GPX format into 3D models in STL format. This tool provides a streamlined solution for transforming GPS tracks into visually appealing 3D representations, facilitating data analysis and visualization tasks. These 3D models can be further utilized for various applications, including 3D printing.
 
-# Split_gps_file
-split_gps_file is a versatile tool that enables users to manipulate GPS traces with ease. From modifying GPS data to extracting specific segments based on user-defined criteria, split_gps_file enhances flexibility in handling GPS data files.
+# Main.py
+Main.py is the primary program that invokes all the necessary functions.
 
-# Examples: Stelvio, Presolana, and Gavia
-Stelvio, Presolana, and Gavia serve as exemplary applications of GpsToStl and split_gps_file. These examples showcase how these tools can be effectively utilized to process GPS data and create accurate 3D models from GPS tracks. The resulting 3D models can be further refined and printed using 3D printers, opening up a myriad of possibilities for visualization and physical prototyping.
+# Example
+The Example folder contains several GPS tracks that can be used as samples.
 
-Here's an example of what can be easily done using 3D modeling software (like Fusion 360). You can combine the STL output with a base, as shown in the following image:
+# Main Function
+The Main Function folder includes the core functionalities:
 
-![Presolana Model](presolana/presolana.png)
+    - GPS_function: Contains functions for managing GPS tracks and allows for the selection of segments based on elevation data.
+    - GPS_STL_generator: Converts the selected portion of the GPS track into a 3D model.
+    - STL_function: Contains useful functions for creating STL models (credit: stl_tools).
+    - STL_text: Includes functions for creating 3D text.
+    - podium_STL: Contains a function for constructing small regular 3D structures.
 
-This demonstrates how the generated STL file from the GPS data can be integrated into a 3D model for further visualization and analysis.
+# Old Version
+The Old Version folder collects previous attempts to create the model. Currently, the program is not very fast; however, if the method proposed in method_spline_point.py can be successfully implemented, it should run significantly faster. The challenge here is that I have managed to generate all the desired points but have not yet succeeded in creating the STL model.

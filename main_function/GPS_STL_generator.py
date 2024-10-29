@@ -1,123 +1,89 @@
 import numpy as np
 
-import trimesh
-from main_function.STL_function import writeSTL
-from main_function.GPS_function import parse_gps, AltimetryPlotter, load_gps_data, subsample_gps_data
+from main_function.GPS_function import parse_gps, AltimetryPlotter, load_gps_data
+from main_function.STL_function import numpy2stl
 
-
-def thick_vertices(latitude, longitude, thick=0.5):
-    delta_latitude = np.diff(latitude)
-    delta_longitude = np.diff(longitude)
-    zero_indices = np.where(delta_longitude == 0)[0]
-
-    if zero_indices.size > 0:
-        delta_longitude[zero_indices] = 0.001
-    
-    # Calculate slope (m) for each point
-    m = delta_latitude / delta_longitude
-
-    # Calculate q for each point
-    q = np.where(delta_longitude > 0,
-                 latitude[:-1] - m * longitude[:-1] + thick * np.sqrt(m**2 + 1),
-                 latitude[:-1] - m * longitude[:-1] - thick * np.sqrt(m**2 + 1))
-
-    # Calculate shifted longitude for each point
-    longitude_thick = longitude[:-1]/ (m**2 + 1) + (latitude[:-1] - q )* (m / (m**2 + 1)) 
-
-    # Calculate shifted latitude for each point
-    latitude_thick = m * longitude_thick + q
-
-    if zero_indices.size > 0:
-        longitude_thick[zero_indices] = longitude[zero_indices] + thick
-        latitude_thick[zero_indices] = latitude[zero_indices]
-
-    # Handle the last point separately
-    longitude_thick_last = longitude[-1]/ (m[-1]**2 + 1) + (latitude[-1] - q[-1] )* (m[-1] / (m[-1]**2 + 1)) 
-    latitude_thick_last = m[-1] * longitude_thick_last + q[-1]
-
-    shifted_latitude = np.concatenate([latitude_thick, [latitude_thick_last]])
-    shifted_longitude = np.concatenate([longitude_thick, [longitude_thick_last]])
-
-    return shifted_latitude, shifted_longitude
-
-
-def generate_surface_mesh(subsampled_data, scale_factor, fn = 'tmp_STL/road_STL.stl'):
-    latitudes = subsampled_data[:, 0] * scale_factor
-    longitudes = subsampled_data[:, 1] * scale_factor 
-    elevations = subsampled_data[:, 2]
-    min_elevation = np.ones(len(elevations)) * np.min(elevations)
-
-    latitudes_thick, longitude_thick = thick_vertices(latitudes, longitudes, 1/5000*scale_factor) # Check this last value
-
-    vertices_1 = np.column_stack((latitudes, longitudes, elevations))
-    vertices_2 = np.column_stack((latitudes_thick, longitude_thick, elevations))
-    vertices_3 = np.column_stack((latitudes, longitudes, min_elevation))
-    vertices_4 = np.column_stack((latitudes_thick, longitude_thick, min_elevation))
-    
-    num_points = len(latitudes)
-    facets = []
-
-    n1 = np.zeros(3)
-
-    for i in range(num_points - 1):
-        # Upper surface face
-        facet1 =  np.concatenate([n1, vertices_1[i], vertices_2[i], vertices_1[i+1]])
-        facets.append(facet1)
-        facet2 =  np.concatenate([n1, vertices_1[i+1], vertices_2[i+1], vertices_2[i]])
-        facets.append(facet2)
-
-        # Lower surface face
-        facet3 =  np.concatenate([n1, vertices_3[i], vertices_4[i], vertices_3[i+1]])
-        facets.append(facet3)
-        facet4 =  np.concatenate([n1, vertices_3[i+1], vertices_4[i+1], vertices_4[i]])
-        facets.append(facet4)
-
-        # Side surface face
-        facet5 =  np.concatenate([n1, vertices_1[i], vertices_3[i], vertices_1[i+1]])
-        facets.append(facet5)
-        facet6 =  np.concatenate([n1, vertices_1[i+1], vertices_3[i+1], vertices_3[i]])
-        facets.append(facet6)
-        
-        facet7 =  np.concatenate([n1, vertices_2[i], vertices_4[i], vertices_2[i+1]])
-        facets.append(facet7)
-        facet8 =  np.concatenate([n1, vertices_2[i+1], vertices_4[i+1], vertices_4[i]])
-        facets.append(facet8)
-
-    # The last faces
-    facet =  np.concatenate([n1, vertices_1[-1], vertices_2[-1], vertices_3[-1]])
-    facets.append(facet)
-    facet =  np.concatenate([n1, vertices_2[-1], vertices_4[-1], vertices_3[-1]])
-    facets.append(facet)
-
-    writeSTL(facets, fn)
-
-    mesh = trimesh.load(fn)
-
-    trimesh.repair.fill_holes(mesh)
-    trimesh.repair.fix_normals(mesh)
-    trimesh.repair.fix_inversion(mesh)
-    trimesh.repair.fix_winding(mesh)
-
-    mesh.export(fn)
-
-    return mesh
-
+from skimage.draw import polygon
+from scipy.interpolate import splprep, splev, interp1d
 
 
 def GPStoSTL (path_gps = 'example/selvino/selvino.gpx', selection = True, output_path = 'tmp_STL/selected_data.txt'):
     if selection == True:
         file_path = path_gps
         distances, elevation_data = parse_gps(file_path)
-        AltimetryPlotter(distances, elevation_data, output_path)
+        selection = AltimetryPlotter(distances, elevation_data, output_path)
+        selected_distance = selection.get_selected_distance()
 
     gps_data = load_gps_data(output_path)
     latitudes = gps_data[:, 0]
     longitudes = gps_data[:, 1]
     elevations = gps_data[:, 2]
 
-    # Subsample the data
-    subsampled_gps_data = subsample_gps_data(latitudes, longitudes, elevations, min_distance=2, max_distance=350)
+    x = latitudes
+    y = longitudes
+    thickness = np.min(np.diff(latitudes))
+    
+    x_smooth, y_smooth, x_inner, y_inner, elevations_smooth = spline_inner_curve(x, y, elevations, selected_distance, thickness)
+    uphill_matrix = generate_elevation_matrix(x_smooth, y_smooth, x_inner, y_inner, elevations_smooth,image_resolution= 800)
 
-    # debug_visualization(gps_data, subsampled_gps_data)
 
-    return generate_surface_mesh(subsampled_gps_data, scale_factor=10000)
+    return numpy2stl(uphill_matrix, fn = 'tmp_STL/uphill_tmp_STL.stl',scale=100, mask_val=1, solid=True,  min_thickness_percent=0)
+
+
+
+
+def spline_inner_curve(x, y, elevations, selection_len, thickness=None):
+    thickness = np.min(np.diff(x)) if thickness is None else thickness
+    
+    tck, u = splprep([x, y], s=0)
+    u_fine = np.linspace(0, 1, 1000 * int(selection_len + 1))
+
+    x_smooth, y_smooth = splev(u_fine, tck)
+
+    elevation_spline = interp1d(u, elevations, kind='linear', fill_value='extrapolate')
+    elevations_smooth = elevation_spline(u_fine)
+
+    x_inner = np.copy(x_smooth)
+    y_inner = np.copy(y_smooth)
+
+    nx = - (y_smooth[1:] - y_smooth[:-1]) / np.sqrt((x_smooth[1:] - x_smooth[:-1])**2 + (y_smooth[1:] - y_smooth[:-1])**2)
+    ny = (x_smooth[1:] - x_smooth[:-1]) / np.sqrt((x_smooth[1:] - x_smooth[:-1])**2 + (y_smooth[1:] - y_smooth[:-1])**2)
+
+    for i in range(len(x_inner) - 1):
+        x_inner[i] -= thickness * nx[i]
+        y_inner[i] -= thickness * ny[i]
+
+    return x_smooth, y_smooth, x_inner, y_inner, elevations_smooth
+
+def generate_elevation_matrix(x_inner, y_inner, x_outer, y_outer, elevations, image_resolution=3000):
+    x_min, x_max = min(np.min(x_inner), np.min(x_outer)), max(np.max(x_inner), np.max(x_outer))
+    y_min, y_max = min(np.min(y_inner), np.min(y_outer)), max(np.max(y_inner), np.max(y_outer))
+
+    range_x, range_y = x_max - x_min, y_max - y_min
+    scale_factor = image_resolution / max(range_x, range_y)  # Fattore di scala unico per mantenere le proporzioni
+    
+    image_width = int(range_x * scale_factor)
+    image_height = int(range_y * scale_factor)
+    elevation_matrix = np.zeros((image_width,image_height), dtype=np.float32) 
+
+    x_inner_scaled = ((x_inner - x_min) * scale_factor).astype(int)
+    y_inner_scaled = ((y_inner - y_min) * scale_factor).astype(int)
+    x_outer_scaled = ((x_outer - x_min) * scale_factor).astype(int)
+    y_outer_scaled = ((y_outer - y_min) * scale_factor).astype(int)
+    elevations_scaled = elevations-np.min(elevations)
+
+    for i in range(len(x_inner_scaled) - 1):
+        inner_start = (x_inner_scaled[i], y_inner_scaled[i])
+        inner_end = (x_inner_scaled[i + 1], y_inner_scaled[i + 1])
+        outer_start = (x_outer_scaled[i], y_outer_scaled[i])
+        outer_end = (x_outer_scaled[i + 1], y_outer_scaled[i + 1])
+
+        polygon_points = [inner_start, outer_start, outer_end, inner_end]
+        rr, cc = polygon(np.array(polygon_points)[:, 0], np.array(polygon_points)[:, 1], elevation_matrix.shape)
+
+        # Assicurati che rr e cc siano nei limiti della matrice
+        valid_indices = (rr >= 0) & (rr < elevation_matrix.shape[0]) & (cc >= 0) & (cc < elevation_matrix.shape[1])
+        elevation_matrix[rr[valid_indices], cc[valid_indices]] = elevations_scaled[i]+0.1 
+  
+
+    return elevation_matrix
