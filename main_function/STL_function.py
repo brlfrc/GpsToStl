@@ -50,7 +50,7 @@ def writeSTL(facets, file_name, ascii=False):
 
     f.close()
 
-def crop_array(A):
+def crop_array(A, margin=2):
     non_zero_rows = np.any(A != 0, axis=1)
     non_zero_cols = np.any(A != 0, axis=0)
 
@@ -60,8 +60,19 @@ def crop_array(A):
     first_col = np.argmax(non_zero_cols)
     last_col = len(non_zero_cols) - np.argmax(non_zero_cols[::-1]) - 1
 
-    cropped_A = A[first_row:last_row + 1, first_col:last_col + 1]
+    # Calcola i margini reali per rimanere all'interno dei limiti di A
+    top_margin = min(margin, first_row)  # Non va oltre il limite superiore
+    bottom_margin = min(margin, len(A) - last_row - 1)  # Non va oltre il limite inferiore
+    left_margin = min(margin, first_col)  # Non va oltre il limite sinistro
+    right_margin = min(margin, len(A[0]) - last_col - 1)  # Non va oltre il limite destro
 
+    # Esegui il ritaglio tenendo conto dei margini
+    cropped_A = A[
+        first_row - top_margin : last_row + 1 + bottom_margin,
+        first_col - left_margin : last_col + 1 + right_margin
+    ]
+
+    # Aggiungi il padding di 1 unità di zeri tutto intorno
     cropped_A_with_zeros = np.pad(cropped_A, ((1, 1), (1, 1)), mode='constant', constant_values=0)
 
     return cropped_A_with_zeros
@@ -69,7 +80,7 @@ def crop_array(A):
 def roll2d(image, shifts):
     return np.roll(np.roll(image, shifts[0], axis=0), shifts[1], axis=1)
 
-def numpy2stl(image, fn = 'tmp_STL/title_STL.stl',scale=0.1, mask_val=None,
+def numpy2stl(image, fn = 'tmp_STL/title_STL.stl', scale=0.1, mask_val=None,
                   solid=True,  min_thickness_percent=0.1):
     
     A = np.array(image) / 255.0  

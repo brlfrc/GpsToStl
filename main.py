@@ -1,19 +1,14 @@
-from main_function.STL_text import generate_text_STL
-from main_function.podium_STL import create_podium
-from main_function.GPS_STL_generator import GPStoSTL
-
-mesh = generate_text_STL (text= 'Selvino', font_size=80 )
-mesh.show()
-
-podium = create_podium ()
-podium.show()
-
-uphill= GPStoSTL(path_gps = 'example/selvino/selvino.gpx', selection=True)
-uphill.show()
+from main_function.Text3D import Text3D
+from main_function.Podium import Podium
+from main_function.UphillSTL import UphillSTL
+from main_function.Model_3D import Model_3D
 
 
-mesh.apply_translation([0, 0, 5])
-uphill.apply_translation([0, 0, 10])
+mesh = Text3D(text= 'Selvino', font_size=80 )
+uphill = UphillSTL(path_gps='example/selvino/selvino.gpx', selection=True)
+podium = Podium(width=50, height=15, shape="cylindrical")  # Example podium shape
+text = Text3D(text= 'SELVINO', font_size=80 )
 
-combined_mesh = mesh + podium + uphill
-combined_mesh.show()
+total_model = Model_3D(podium= podium, uphill= uphill, text3d= text)
+total_model.update_mesh()
+total_model.show()
