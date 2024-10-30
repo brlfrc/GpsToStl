@@ -11,10 +11,11 @@ The Example folder contains several GPS tracks that can be used as samples.
 The Main Function folder includes the core functionalities:
 
     - GPS_function: Contains functions for managing GPS tracks and allows for the selection of segments based on elevation data.
-    - GPS_STL_generator: Converts the selected portion of the GPS track into a 3D model.
     - STL_function: Contains useful functions for creating STL models (credit: stl_tools).
-    - STL_text: Includes functions for creating 3D text.
-    - podium_STL: Contains a function for constructing small regular 3D structures.
+
+    - UphillSTL: Contains the class for converting the selected portion of the GPS track into a 3D model.
+    - Text3D: Contains the class for creating 3D text.
+    - Podium: Contains the class for the podium.
 
 # Old Version
 The Old Version folder collects previous attempts to create the model. Currently, the program is not very fast; however, if the method proposed in method_spline_point.py can be successfully implemented, it should run significantly faster. The challenge here is that I have managed to generate all the desired points but have not yet succeeded in creating the STL model.
