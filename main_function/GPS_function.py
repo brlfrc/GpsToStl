@@ -30,7 +30,7 @@ def parse_gps(file_path):
     return distances, elevation_data
 
 class AltimetryPlotter:
-    def __init__(self, distances, elevation_data, output_path = 'tmp_STL/selected_data.txt'):
+    def __init__(self, distances, elevation_data, close_callback=None, output_path = 'tmp_STL/selected_data.txt', show_plot=True):
         self.distances = distances
         self.elevation_data = elevation_data
         self.elevations = [point[2] for point in elevation_data]
@@ -39,7 +39,10 @@ class AltimetryPlotter:
         self.selection = (None, None)
         self.output_path = output_path
         self.selected_distance = 1
+        self.close_callback = close_callback 
+        self.show_plot = show_plot
         self._create_plot()
+
     
     def _create_plot(self):
         self.ax.plot(self.distances, self.elevations, label='Elevation Profile')
@@ -55,7 +58,8 @@ class AltimetryPlotter:
         self.button = Button(ax_button, 'Finalize')
         self.button.on_clicked(self.finalize_selection)
         
-        plt.show()
+        if self.show_plot:
+            plt.show()
 
     def onselect(self, xmin, xmax):
         self.selection = (xmin, xmax)
@@ -71,20 +75,33 @@ class AltimetryPlotter:
             print(f"Finalized selection: {xmin} to {xmax} meters")
             indices = [i for i, d in enumerate(self.distances) if xmin <= d <= xmax]
             selected_data = [self.elevation_data[i] for i in indices]
-            self.selected_distance = xmax-xmin
+            self.selected_distance = xmax - xmin
 
             with open(self.output_path, 'w') as f:
                 for point in selected_data:
                     f.write(f"{point[0]},{point[1]},{point[2]}\n")
-            
+
             print(f"Selected data saved with {len(selected_data)} points.")
-            plt.close(self.fig)  # Close the plot when finalized
+            if self.show_plot:
+                plt.close(self.fig)  # Close the plot when finalized
+
+            # Call the close callback to close the main window
+            if self.close_callback and self.show_plot == False:
+                self.close_callback()
         else:
             print("No selection made")
-    
+
     def get_selected_distance(self):
         return self.selected_distance
 
+    def get_figure(self):
+        # Return the figure and axes for embedding in the GUI
+        return self.fig, self.ax
+    
+    @classmethod
+    def from_file(cls, file_path, close_callback=None, show_plot=False):
+        distances, elevation_data = parse_gps(file_path)  # Assuming parse_gps is defined
+        return cls(distances, elevation_data, close_callback=close_callback, show_plot=show_plot)
 
 
 def load_gps_data(file_path):

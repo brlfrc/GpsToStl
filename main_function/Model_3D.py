@@ -5,7 +5,7 @@ from main_function.Podium import Podium
 from main_function.UphillSTL import UphillSTL
 
 class Model_3D:
-    def __init__(self, podium=None, text3d=None, uphill=None, podium_specs=None, text_specs=None, uphill_specs=None, margin = 0.8, height = 0):
+    def __init__(self, podium=None, text3d=None, uphill=None, podium_specs=None, text_specs=None, uphill_specs=None, margin = 0.8, height_multiplier = 3, rotation_uphill_angle = 0):
         """
         Initialize the Model_3D class. Allows initializing by passing podium, text3d, and uphill objects
         directly or by passing specifications for each.
@@ -19,11 +19,17 @@ class Model_3D:
             self.text3d = Text3D(**text_specs) if text_specs else None
             self.uphill = UphillSTL(**uphill_specs) if uphill_specs else None
 
+        self.podium_mesh = self.podium.mesh
+        self.text_mesh = self.text3d.mesh
+        self.uphill_mesh = self.uphill.mesh
+
         # Initialize combined mesh
         self.mesh = None
+
         # Fixed parameters
-        self.fixed_height = height
+        self.height_multiplier = height_multiplier
         self.margin = margin
+        self.rotation_uphill_angle= rotation_uphill_angle
 
     # Main function
     def update_mesh(self, combine_uphill=True, combine_text=True):
@@ -32,12 +38,18 @@ class Model_3D:
         - combine_uphill: if True, combines uphill and podium.
         - combine_text: if True, combines text and podium.
         """
-        self.mesh= self.podium.mesh
 
         if combine_text and self.text3d:
-            self.mesh = self._combine_text_with_podium()
+            self.text_mesh = self._remodel_text_stl()
         if combine_uphill and self.uphill:
-            self.mesh = self._combine_uphill_and_podium()
+            self.rotation_uphill(self.rotation_uphill_angle)
+            self.uphill_mesh = self._remodel_uphill_stl()
+        
+        self.text_mesh.visual.face_colors= self.text3d.color
+        self.uphill_mesh.visual.face_colors= self.uphill.color
+        self.podium_mesh.visual.face_colors= self.podium.color
+
+        self.mesh = self.podium_mesh + self.text_mesh + self.uphill_mesh
         
 
     def save_mesh(self, filename='final_model.stl'):
@@ -46,30 +58,39 @@ class Model_3D:
             self.mesh.export(filename)
         else:
             raise ValueError("Mesh is not defined. Call update_mesh() to create it first.")
-
+    
+    def save_all_mesh(self, filepath='tmp_STL/'):
+        """Exports the current mesh to an STL file."""
+        self.text_mesh.export(filepath+ 'text.STL')
+        self.podium_mesh.export(filepath+ 'podium.STL')
+        self.uphill_mesh.export(filepath+ 'uphill.STL')
+        
     def show(self):
         """Displays the generated STL mesh."""
         self.mesh.show()
+
+    def rotation_uphill(self, rotation_uphill_angle):
+        angle = rotation_uphill_angle/360*2*np.pi
+        self.uphill_mesh.apply_transform(trimesh.transformations.rotation_matrix(angle, [0, 0, 1]))
 
 ##########################################
     # COMBINE UPHILL AND PODIUM
 ##########################################
 
-    def _combine_uphill_and_podium(self):
+    def _remodel_uphill_stl(self):
 
         if self.podium.shape == "rectangular":
-            combined_mesh = self._combine_uphill_with_rectangular_podium(self.uphill.mesh.copy(), self.podium)
+            uphill_mesh = self._combine_uphill_with_rectangular_podium(self.uphill_mesh.copy(), self.podium)
         elif self.podium.shape == "cylindrical":
-            combined_mesh = self._combine_uphill_with_cylindrical_podium(self.uphill.mesh.copy(), self.podium)
+            uphill_mesh = self._combine_uphill_with_cylindrical_podium(self.uphill_mesh.copy(), self.podium)
         else:
             raise ValueError("Unsupported podium shape: choose 'rectangular' or 'cylindrical'.")
 
-        return combined_mesh
+        return uphill_mesh
 
 
     def _combine_uphill_with_rectangular_podium(self, uphill_mesh, podium):
         """Combines uphill mesh with a rectangular podium."""
-        # Scale the uphill mesh to match the fixed height
         uphill_mesh = self._scale_uphill(uphill_mesh)
 
         # Align uphill mesh with podium
@@ -90,13 +111,10 @@ class Model_3D:
         
         uphill_mesh.apply_translation(translation_vector)
 
-        # Combine podium and uphill meshes
-        combined_mesh = self.mesh + uphill_mesh
-        return combined_mesh
+        return uphill_mesh
 
     def _combine_uphill_with_cylindrical_podium(self, uphill_mesh, podium):
         """Combines uphill mesh with a cylindrical podium."""
-        # Scale the uphill mesh to match the fixed height
         uphill_mesh = self._scale_uphill(uphill_mesh)
 
         # # Align uphill mesh with podium
@@ -117,12 +135,10 @@ class Model_3D:
         
         uphill_mesh.apply_translation(translation_vector)
 
-        # Combine podium and uphill meshes into the final result
-        combined_mesh = self.mesh + uphill_mesh
-        return combined_mesh
+        return uphill_mesh
     
     def _scale_uphill(self, uphill_mesh):
-        """Scales the uphill mesh to fit the podium dimensions in x and y axes and sets a fixed height for z axis."""
+        """Scales the uphill mesh to fit the podium dimensions in x and y axes and sets a height for z axis."""
         vertices = uphill_mesh.vertices
         min_coords = vertices.min(axis=0)
         max_coords = vertices.max(axis=0)
@@ -144,7 +160,7 @@ class Model_3D:
         scale_y = target_depth / uphill_depth if uphill_depth > 0 else 1
         min_z, max_z = vertices[:, 2].min(), vertices[:, 2].max()
         current_height = max_z - min_z
-        scale_z = (self.fixed_height or self.podium.height*3) / current_height
+        scale_z = (self.height_multiplier*self.podium.height) / current_height
 
         uphill_mesh.apply_scale([scale_x, scale_y, scale_z])
         return uphill_mesh
@@ -154,20 +170,21 @@ class Model_3D:
     # COMBINE TEXT AND PODIUM
 ################################################
 
-    def _combine_text_with_podium(self):
+    def _remodel_text_stl(self):
         """Combines the scaled text mesh with the podium."""
         text_mesh = self.text3d.mesh.copy()
+
         rotation_matrix = trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0])
         text_mesh.apply_transform(rotation_matrix)
 
         if self.podium.shape == "rectangular":
-            combined_mesh = self._combine_text_with_rectangular_podium(text_mesh, self.podium)
+            text_mesh_modified = self._combine_text_with_rectangular_podium(text_mesh, self.podium)
         elif self.podium.shape == "cylindrical":
-            combined_mesh = self._combine_text_with_cylindrical_podium(text_mesh, self.podium)
+            text_mesh_modified = self._combine_text_with_cylindrical_podium(text_mesh, self.podium)
         else:
             raise ValueError("Unsupported podium shape: choose 'rectangular' or 'cylindrical'.")
 
-        return combined_mesh
+        return text_mesh_modified
 
     def _scale_text_to_podium(self, text_mesh, podium):
         """Scales the text mesh dimensions to fit the podium's dimensions."""
@@ -195,7 +212,7 @@ class Model_3D:
         text_mesh = self._scale_text_to_podium(text_mesh, podium)
         translation_vector = [podium.depth / 2, 0, 0]
         text_mesh.apply_translation(translation_vector)
-        return self.mesh + text_mesh
+        return text_mesh
 
     def _slice_mesh_by_width(self, mesh, slice_width, axis='x'):
         # Map axis to the corresponding index (0 for 'x', 1 for 'y', 2 for 'z')
@@ -271,10 +288,6 @@ class Model_3D:
         len_segment = 2 * np.pi * (podium.width/2) / num_segments
 
         submeshes = self._slice_mesh_by_width(text_mesh, len_segment, axis='y')
-        
-        # # Calculate vertical offset for centering text on the podium height
-        # text_height = np.max(text_mesh.vertices[:, 2]) - np.min(text_mesh.vertices[:, 2])
-        # text_offset_z = (podium.height / 2) - (text_height / 2)
 
         # List to hold the transformed sub-meshes
         combined_meshes = []
@@ -308,8 +321,6 @@ class Model_3D:
         # Combine all transformed submeshes into a single mesh for the text
         final_text_mesh = trimesh.util.concatenate(combined_meshes)
         
-        # Combine podium and text meshes into the final result
-        combined_mesh = podium.mesh + final_text_mesh
-        return combined_mesh
+        return final_text_mesh
 
 

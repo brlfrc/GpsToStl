@@ -1,7 +1,7 @@
 import trimesh
 
 class Podium:
-    def __init__(self, width=50, depth=50, height=10, shape="rectangular"):
+    def __init__(self, width=50, depth=50, height=10, shape="rectangular", color = [0,0,250,250]):
         """
         Inizializza un'istanza della classe Podium, creando una mesh per il podio.
         
@@ -15,6 +15,7 @@ class Podium:
         self.depth = depth
         self.height = height
         self.shape = shape
+        self.color = color
         self.mesh = self._create_mesh()
         
     def _create_mesh(self):
@@ -24,10 +25,12 @@ class Podium:
             podium = trimesh.creation.box(extents=(self.depth, self.width, self.height))
         elif self.shape == "cylindrical":
             # Crea una mesh di tipo cilindro per il podio circolare
-            podium = trimesh.creation.cylinder(radius=self.width / 2, height=self.height)
+            podium = trimesh.creation.cylinder(radius=self.width/2, height=self.height)
             self.depth = self.width
         else:
             raise ValueError("Forma non supportata: scegli 'rectangular' o 'cylindrical'.")
+        
+        podium.visual.face_colors= self.color
         return podium
 
     def show(self):

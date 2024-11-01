@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 from main_function.STL_function import numpy2stl
 
 class Text3D:
-    def __init__(self, text='Example', font="arial.ttf", font_size=50, scale=5):
+    def __init__(self, text='Example', font="arial.ttf", font_size=50, scale=5, mask_val= None, color = [0,250,0,250]):
         """
         Initializes an instance of Text3DGenerator to generate a 3D STL model from text.
         
@@ -20,7 +20,9 @@ class Text3D:
         self.padding = 20
         self.scale = scale
         self.solid = True
+        self.mask = mask_val
         self.image = None
+        self.color = color
         self.mesh = self._generate_text_stl()  # Automatically generates the STL mesh
 
     def _generate_text_image(self):
@@ -61,8 +63,8 @@ class Text3D:
         text_image = self.image
         
         # Convert the image into an STL mesh
-        stl_mesh = numpy2stl(text_image, scale=self.scale)
-        
+        stl_mesh = numpy2stl(text_image, scale=self.scale, mask_val=self.mask)
+        stl_mesh.visual.face_colors= self.color
         return stl_mesh
 
     def show(self):

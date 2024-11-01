@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 from main_function.GPS_function import parse_gps, AltimetryPlotter, load_gps_data
 from main_function.STL_function import numpy2stl
 from skimage.draw import polygon
 from scipy.interpolate import splprep, splev, interp1d
-import trimesh
+from haversine import haversine, Unit
 
 class UphillSTL:
-    def __init__(self, path_gps='example/selvino/selvino.gpx', selection=True, output_path='tmp_STL/selected_data.txt', fn = 'tmp_STL/uphill_tmp_STL.stl', scale=100, thickness_multiplier=1,  image_resolution=800):
+    def __init__(self, path_gps='example/selvino.gpx', selection=True, output_path='tmp_STL/selected_data.txt', fn = 'tmp_STL/uphill_tmp_STL.stl', scale=100, thickness_multiplier=1,  image_resolution=800, color = [250,0,0,250]):
         """
         Initializes an instance of UphillSTL to generate a 3D STL model from GPS data.
         
@@ -25,8 +26,27 @@ class UphillSTL:
         self.scale = scale
         self.thickness_multiplier = thickness_multiplier
         self.image_resolution = image_resolution
+        self.color = color
         self.elevation_matrix = self._generate_elevation_matrix()
         self.mesh = self._create_mesh()  # Create the mesh from the elevation matrix
+
+    def show_matrix(self):
+        """Displays the elevation matrix using matplotlib."""
+        plt.imshow(self.elevation_matrix, cmap='terrain')
+        plt.colorbar(label='Elevation')
+        plt.title('Elevation Matrix')
+        plt.xlabel('X coordinate')
+        plt.ylabel('Y coordinate')
+        plt.show()
+
+    def show(self):
+        """Displays the generated STL mesh."""
+        self.mesh.show()
+
+    def show_all(self):
+        """Displays both the elevation matrix and the STL mesh."""
+        self.show_matrix()  # Show the elevation matrix
+        self.show_mesh()    # Show the mesh
 
     def _generate_elevation_matrix(self):
         """Generates the elevation matrix from the GPS data."""
@@ -34,11 +54,27 @@ class UphillSTL:
             distances, elevation_data = parse_gps(self.path_gps)
             selection = AltimetryPlotter(distances, elevation_data, self.output_path)
             selected_distance = selection.get_selected_distance()
+            gps_data = load_gps_data(self.output_path)
+            latitudes = gps_data[:, 0]
+            longitudes = gps_data[:, 1]
+            elevations = gps_data[:, 2]
+        else:
+            gps_data = load_gps_data(self.output_path)
+            latitudes = gps_data[:, 0]
+            longitudes = gps_data[:, 1]
+            elevations = gps_data[:, 2]
+            total_distance = 0
+            
+            previous_point = None
+            for lat, lon in zip(latitudes, longitudes):
+                if previous_point is not None:
+                    dist = haversine((previous_point.latitude, previous_point.longitude), (lat, lon), unit=Unit.METERS)
+                    total_distance += dist / 1000  
+                else:
+                    dist = 0  
+            
+            selected_distance = total_distance
 
-        gps_data = load_gps_data(self.output_path)
-        latitudes = gps_data[:, 0]
-        longitudes = gps_data[:, 1]
-        elevations = gps_data[:, 2]
 
         x = latitudes
         y = longitudes
@@ -127,22 +163,5 @@ class UphillSTL:
     def _create_mesh(self):
         """Creates a trimesh object from the elevation matrix."""
         mesh = numpy2stl(self.elevation_matrix, fn=self.fn, scale=self.scale, mask_val=0.05, solid=True, min_thickness_percent=0)
+        mesh.visual.face_colors= self.color
         return mesh
-
-    def show_matrix(self):
-        """Displays the elevation matrix using matplotlib."""
-        plt.imshow(self.elevation_matrix, cmap='terrain')
-        plt.colorbar(label='Elevation')
-        plt.title('Elevation Matrix')
-        plt.xlabel('X coordinate')
-        plt.ylabel('Y coordinate')
-        plt.show()
-
-    def show(self):
-        """Displays the generated STL mesh."""
-        self.mesh.show()
-
-    def show_all(self):
-        """Displays both the elevation matrix and the STL mesh."""
-        self.show_matrix()  # Show the elevation matrix
-        self.show_mesh()    # Show the mesh
