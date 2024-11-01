@@ -7,7 +7,7 @@ from scipy.interpolate import splprep, splev, interp1d
 import trimesh
 
 class UphillSTL:
-    def __init__(self, path_gps='example/selvino/selvino.gpx', selection=True, output_path='tmp_STL/selected_data.txt', fn = 'tmp_STL/uphill_tmp_STL.stl', scale=100, image_resolution=800):
+    def __init__(self, path_gps='example/selvino/selvino.gpx', selection=True, output_path='tmp_STL/selected_data.txt', fn = 'tmp_STL/uphill_tmp_STL.stl', scale=100, thickness_multiplier=1,  image_resolution=800):
         """
         Initializes an instance of UphillSTL to generate a 3D STL model from GPS data.
         
@@ -23,6 +23,7 @@ class UphillSTL:
         self.output_path = output_path
         self.fn = fn
         self.scale = scale
+        self.thickness_multiplier = thickness_multiplier
         self.image_resolution = image_resolution
         self.elevation_matrix = self._generate_elevation_matrix()
         self.mesh = self._create_mesh()  # Create the mesh from the elevation matrix
@@ -41,19 +42,36 @@ class UphillSTL:
 
         x = latitudes
         y = longitudes
-        thickness = np.min(np.diff(latitudes))
 
         # Generate the smooth spline curve and inner boundaries
-        x_smooth, y_smooth, x_inner, y_inner, elevations_smooth = self._spline_inner_curve(x, y, elevations, selected_distance, thickness)
+        x_smooth, y_smooth, x_inner, y_inner, elevations_smooth = self._spline_inner_curve(x, y, elevations, selected_distance, self.thickness_multiplier)
         elevation_matrix = self._create_elevation_matrix(x_smooth, y_smooth, x_inner, y_inner, elevations_smooth)
 
         return elevation_matrix
 
     def _spline_inner_curve(self, x, y, elevations, selection_len, thickness=None):
         """Generates inner curves and corresponding elevation data."""
-        thickness = np.min(np.diff(x)) if thickness is None else thickness
+        thickness = np.min(np.diff(x))*self.thickness_multiplier
         
-        tck, u = splprep([x, y], s=0)
+        # Initialize parameters for fitting the spline
+        attempts = 0
+        max_attempts = 3  # Maximum number of attempts to fit the spline
+
+        while attempts < max_attempts:
+            try:
+                # Attempt spline fitting
+                tck, u = splprep([x, y], s=0)
+                break  # Exit the loop if successful
+            except ValueError:
+                # If it fails, downsample to use half the points
+                x, y = x[::2], y[::2]
+                elevations = elevations[::2]  # Also downsample elevations to match
+                attempts += 1  # Increment the attempt counter
+                
+                # If downsampling results in too few points, break the loop
+                if len(x) < 2:  # Ensure there are at least 2 points to fit a spline
+                    raise ValueError("Not enough unique points to fit a spline.")
+
         u_fine = np.linspace(0, 1, 1000 * int(selection_len + 1))
 
         x_smooth, y_smooth = splev(u_fine, tck)
