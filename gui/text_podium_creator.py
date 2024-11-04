@@ -13,7 +13,7 @@ from main_function.Podium import Podium
 from gui.model_3D_creator import Model3DGeneratorGUI
 
 
-class TextAndPodiumGeneratorGUI(tk.Toplevel):
+class TextAndPodiumGeneratorGUI(tk.Tk):
     def __init__(self, uphill_STL = None):
         self.uphill_STL = uphill_STL if uphill_STL is not None else UphillSTL()
         self.text_3d = None

@@ -59,6 +59,13 @@ class Model_3D:
         else:
             raise ValueError("Mesh is not defined. Call update_mesh() to create it first.")
     
+    def save_two_mesh(self, filepath='tmp_STL/'):
+        """Exports the current mesh to an STL file."""
+        podium_text_mesh = self.podium_mesh + self.text_mesh
+        
+        podium_text_mesh.export(filepath+ 'PODIUM_TEXT.STL')
+        self.uphill_mesh.export(filepath+ 'uphill.STL')
+
     def save_all_mesh(self, filepath='tmp_STL/'):
         """Exports the current mesh to an STL file."""
         self.text_mesh.export(filepath+ 'text.STL')

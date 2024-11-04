@@ -8,7 +8,7 @@ from main_function.UphillSTL import UphillSTL
 
 
 class Model3DGeneratorGUI(tk.Tk):
-    def __init__(self, uphill_STL=None, podium_stl=None, text3d=Text3D()):
+    def __init__(self, uphill_STL=None, podium_stl=None, text3d=None):
         super().__init__() 
 
         self.uphill_STL = uphill_STL if uphill_STL is not None else UphillSTL()
@@ -70,7 +70,9 @@ class Model3DGeneratorGUI(tk.Tk):
         # You can now use the Model_3D instance as needed
         if hasattr(self, 'model_3D'):
             # Here, you might want to process the model_3D before closing
-            print("Returning Model_3D instance:", self.model_3D)
+            print("Returning Model_3D instance:")
+            self.model_3D.save_mesh()
+            self.model_3D.save_two_mesh()
         
         # Close all windows
         self.quit()  # This will close the main window and exit the application

@@ -9,7 +9,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from main_function.UphillSTL import UphillSTL  
 from gui.text_podium_creator import TextAndPodiumGeneratorGUI
 
-class UphillCreatorGUI(tk.Toplevel):
+class UphillCreatorGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Road Model Generator")

@@ -92,21 +92,26 @@ class UphillSTL:
         # Initialize parameters for fitting the spline
         attempts = 0
         max_attempts = 3  # Maximum number of attempts to fit the spline
+        
+        points = np.column_stack((x, y))
+        _, indices = np.unique(points, axis=0, return_index=True)
+        indices = np.sort(indices)
 
-        while attempts < max_attempts:
-            try:
-                # Attempt spline fitting
-                tck, u = splprep([x, y], s=0)
-                break  # Exit the loop if successful
-            except ValueError:
-                # If it fails, downsample to use half the points
-                x, y = x[::2], y[::2]
-                elevations = elevations[::2]  # Also downsample elevations to match
-                attempts += 1  # Increment the attempt counter
-                
-                # If downsampling results in too few points, break the loop
-                if len(x) < 2:  # Ensure there are at least 2 points to fit a spline
-                    raise ValueError("Not enough unique points to fit a spline.")
+        x, y = x[indices], y[indices]
+        elevations = elevations[indices]
+        tck, u = splprep([x, y], s=0)
+
+        # while attempts < max_attempts:
+        #     try:
+        #         # Attempt spline fitting
+        #         tck, u = splprep([x, y], s=0)
+        #         break 
+        #     except ValueError:
+        #         # If it fails, downsample to use half the points
+        #         x, y = x[::2], y[::2]
+        #         elevations = elevations[::2]  # Also downsample elevations to match
+        #         attempts += 1
+        #     tck, u = splprep([x, y], s=0)
 
         u_fine = np.linspace(0, 1, 1000 * int(selection_len + 1))
 

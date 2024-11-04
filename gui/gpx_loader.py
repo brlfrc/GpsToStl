@@ -92,8 +92,4 @@ class GPXLoaderGUI(tk.Tk):
     def open_second_window(self):
         self.destroy()  # Close the first window
         second_window = UphillCreatorGUI()  # Create and open the second window
-
-# # if __name__ == "__main__":
-app = GPXLoaderGUI()
-app.mainloop()
    
