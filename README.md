@@ -12,7 +12,7 @@ By choosing parameters like color, model thickness, and road resolution, a 3D mo
 ![Third screen](images/3_window.png)
 This screen lets you create the text to place on the podium and design the podium itself, defining their specific features.
 
-![Fourth screen](images/1_window.png)
+![Fourth screen](images/4_window.png)
 Here, all the elements are combined to generate the final model.
 
 # Main.py
