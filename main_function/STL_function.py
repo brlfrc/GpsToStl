@@ -80,13 +80,17 @@ def crop_array(A, margin=2):
 def roll2d(image, shifts):
     return np.roll(np.roll(image, shifts[0], axis=0), shifts[1], axis=1)
 
-def numpy2stl(image, fn = 'tmp_STL/title_STL.stl', scale=0.1, mask_val=None,
+def numpy2stl(image, fn = 'tmp_STL/title_STL.stl', scale=0.1, mask_val=None, rotation = True,
                   solid=True,  min_thickness_percent=0.1):
     
     A = np.array(image) / 255.0  
     A = crop_array(A)
     
     m, n = A.shape
+    if n >= m and rotation:
+        A = np.rot90(A, k=3)
+        m, n = n, m
+    
     A = scale * (A - A.min())
 
     if not mask_val:

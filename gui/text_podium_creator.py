@@ -178,7 +178,7 @@ class TextAndPodiumGeneratorGUI(tk.Tk):
             depth = float(self.depth_entry.get()) if self.shape_var.get() == "rectangular" else float(self.width_entry.get())
 
             # Create an instance of Podium
-            self.podium_STL = Podium(width=width, depth=depth, height=height, shape=self.shape_var.get(), color=self.color_podium)
+            self.podium_STL = Podium(width=width, depth=depth, height=height, radius = width, shape=self.shape_var.get(), color=self.color_podium)
 
             # Display in matplotlib
             self.show_podium_in_matplotlib(self.podium_STL)
@@ -280,6 +280,10 @@ class TextAndPodiumGeneratorGUI(tk.Tk):
         z_positive_vertices = vertices[vertices[:, 2] > -0.1]  # Filter vertices where z > 0
         ax.scatter(z_positive_vertices[:, 0], z_positive_vertices[:, 1], z_positive_vertices[:, 2], color='black', s=10)
 
+        ax.set_xlim(-60, 60)
+        ax.set_ylim(-60, 60)
+        ax.set_zlim(-10, 40)
+        
         ax.set_title('3D Podium Model')
         ax.axis('off')  # Hide axes
         ax.grid(False)  # Hide grid

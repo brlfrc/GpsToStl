@@ -156,7 +156,7 @@ class Model_3D:
             target_width = self.podium.width * self.margin
             target_depth = self.podium.depth * self.margin
         elif self.podium.shape == "cylindrical":
-            target_width = self.podium.width * self.margin
+            target_width = self.podium.radius* 2 * self.margin
             target_depth = target_width
             uphill_width = np.sqrt(uphill_width**2 + uphill_depth**2)
             uphill_depth = uphill_width
@@ -203,7 +203,7 @@ class Model_3D:
         if podium.shape == "rectangular":
             target_width, target_height = podium.width * 0.9, podium.height * 0.9
         elif podium.shape == "cylindrical":
-            target_width = 2 * np.pi * (podium.width / 2) * 0.8
+            target_width = 2 * np.pi * (podium.radius) * 0.8
             target_height = podium.height * 0.8
         else:
             raise ValueError("Unsupported podium shape.")
@@ -292,7 +292,7 @@ class Model_3D:
         
         # Calculate the angle per segment
         angle_per_segment = 2 * np.pi / num_segments
-        len_segment = 2 * np.pi * (podium.width/2) / num_segments
+        len_segment = 2 * np.pi * (podium.radius) / num_segments
 
         submeshes = self._slice_mesh_by_width(text_mesh, len_segment, axis='y')
 
@@ -316,8 +316,8 @@ class Model_3D:
             submesh.apply_transform(rotation_matrix)  # Applica la rotazione
 
             # Calcola la posizione finale lungo la circonferenza
-            x_pos = (podium.width / 2) * np.cos(angle)
-            y_pos = (podium.width / 2) * np.sin(angle)
+            x_pos = (podium.radius) * np.cos(angle)
+            y_pos = (podium.radius) * np.sin(angle)
 
             # Applica la traslazione finale per posizionare il submesh sulla circonferenza del podio
             submesh.apply_translation([x_pos, y_pos, 0])
@@ -330,4 +330,41 @@ class Model_3D:
         
         return final_text_mesh
 
+################################################
+    # Magnets supports
+################################################
+    def magnets_support(self, magnets_radius = 8, magnet_height = 3):
+        if self.podium.shape == "rectangular":
+            hole_mesh = trimesh.creation.cylinder(radius=magnets_radius*1.025, height=magnet_height*1.05)
 
+            hole_mesh.apply_translation([0,0,-magnet_height*1.05/2])
+            hole_mesh.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+            hole_mesh2 = hole_mesh.copy()            
+            hole_mesh.apply_translation([-self.podium.depth/2+magnet_height*1.05, self.podium.width/4, 0])
+            hole_mesh2.apply_translation([-self.podium.depth/2+magnet_height*1.05, -self.podium.width/4, 0])
+
+            self.podium_mesh = self.podium_mesh.difference(hole_mesh).difference(hole_mesh2)
+
+        if self.podium.shape == "cylindrical":
+            hole_mesh = trimesh.creation.cylinder(radius=magnets_radius*1.025, height=magnet_height*1.05)
+            hole_mesh.apply_translation([0,0,-magnet_height*1.05/2])
+            hole_mesh.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+            hole_mesh.apply_translation([0,self.podium.radius-magnet_height*1.05,-magnet_height*1.05/2])
+
+            magnet_support = trimesh.creation.cylinder(radius=magnets_radius*1.5, height=self.podium.radius)
+            magnet_support.apply_translation([0,0,-self.podium.radius/2])
+            magnet_support.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [1, 0, 0]))
+
+            magnet_support = magnet_support.difference(hole_mesh)
+            magnet_support2= magnet_support.copy()
+
+            magnet_support.apply_translation([self.podium.radius/2, 0, 0])
+            magnet_support2.apply_translation([-self.podium.radius/2, 0, 0])
+
+            self.podium_mesh = self.podium_mesh + magnet_support + magnet_support2
+
+################################################
+    # Photo holder
+################################################
+    def photo_holder(self, phot_holder_path ='/tmp_STL/photo_holder.stl'):
+        gg=1

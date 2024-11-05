@@ -63,7 +63,7 @@ class Text3D:
         text_image = self.image
         
         # Convert the image into an STL mesh
-        stl_mesh = numpy2stl(text_image, scale=self.scale, mask_val=self.mask)
+        stl_mesh = numpy2stl(text_image, scale=self.scale, mask_val=self.mask, rotation = False)
         stl_mesh.visual.face_colors= self.color
         return stl_mesh
 
