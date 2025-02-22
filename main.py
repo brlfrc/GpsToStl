@@ -11,8 +11,8 @@ def create_configuration(
     font_path: str= r"C:\Windows\Fonts\Stencilia-A.ttf",
     text_stl_path: str= r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\text_blender.stl",
     diff_stl_path: str= r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\diff_blender.stl",
-    cube_path: str= r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\cube_magnet_holder.stl",
-    magnet_holder_path: str=  r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\magnet_holder.stl",
+    cube_path: str= r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\cube_magnet_holder_v2.stl",
+    magnet_holder_path: str=  r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\magnet_holder_v2.stl",
     output_file: str = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\config.json"
 ):
     config = {
@@ -33,13 +33,16 @@ def create_configuration(
 
     print(f"Configuration file created: {output_file}")
 
-Uphill_Point_blender(path_gps='example/selvino.gpx', selection=True, selected_point_path='tmp_STL/selected_data.txt', 
-                point_output_path = 'tmp_STL/uphill_points.txt', rotation = 90)
+Uphill_Point_blender(path_gps='example/Zoncolan.gpx', selection=True, selected_point_path='tmp_STL/selected_data.txt', 
+                point_output_path = 'tmp_STL/uphill_points.txt', rotation = 160, base_percent= 0.6, height= 45)
 
 output_file = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\config.json"
 
-diff_stl_path = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\diff_blender.stl"
-create_configuration(output_file=output_file, thickness=1, diff_stl_path=diff_stl_path)
+# diff_stl_path = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\tmp_STL\diff_blender.stl"
+
+diff_stl_path = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\STL_da_Stampare\Zoncolan.stl"
+
+create_configuration(output_file=output_file, text_input='ZONCOLAN', thickness=1.6, diff_stl_path=diff_stl_path)
 
 blender_path = r"C:\Program Files\Blender Foundation\Blender 2.91\blender.exe"
 script_path = r"C:\Users\utente\OneDrive - Universita degli Studi di Milano-Bicocca\Desktop\GpxToStl\blender_function\blender_total.py"

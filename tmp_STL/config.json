@@ -1,11 +1,11 @@
 {
-    "thickness": 1,
+    "thickness": 1.6,
     "points_file_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\uphill_points.txt",
     "uphill_stl_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\uphill_blender.stl",
-    "text_input": "Selvino",
+    "text_input": "ZONCOLAN",
     "font_path": "C:\\Windows\\Fonts\\Stencilia-A.ttf",
     "text_stl_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\text_blender.stl",
-    "diff_stl_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\diff_blender.stl",
-    "cube_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\cube_magnet_holder.stl",
-    "magnet_holder_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\magnet_holder.stl"
+    "diff_stl_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\STL_da_Stampare\\Zoncolan.stl",
+    "cube_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\cube_magnet_holder_v2.stl",
+    "magnet_holder_path": "C:\\Users\\utente\\OneDrive - Universita degli Studi di Milano-Bicocca\\Desktop\\GpxToStl\\tmp_STL\\magnet_holder_v2.stl"
 }

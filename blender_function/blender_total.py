@@ -117,52 +117,53 @@ print(f"Uphill mesh has been saved to {uphill_stl_path}")
 ################################################
 #           Creation of the Text mesh
 ################################################
-bpy.ops.object.select_all(action='SELECT')
-bpy.ops.object.delete()
+if text_input.strip():
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
 
-bpy.ops.object.text_add(location=(0, 0, 0))
-text_obj = bpy.context.active_object
-text_obj.data.body = text_input
+    bpy.ops.object.text_add(location=(0, 0, 0))
+    text_obj = bpy.context.active_object
+    text_obj.data.body = text_input
 
-font = bpy.data.fonts.load(font_path)
-text_obj.data.font = font
+    font = bpy.data.fonts.load(font_path)
+    text_obj.data.font = font
 
-text_obj.data.extrude = 0.2
-text_obj.data.offset = 0
+    text_obj.data.extrude = 0.2
+    text_obj.data.offset = 0
 
-text_obj.rotation_euler[0] = 1.5708  # 90 degrees in radians
-text_obj.rotation_euler[2] += 3.14159 
+    text_obj.rotation_euler[0] = 1.5708  # 90 degrees in radians
+    text_obj.rotation_euler[2] += 3.14159 
 
-bpy.ops.object.convert(target='MESH')
-bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    bpy.ops.object.convert(target='MESH')
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
-# Scaling to the desired dimensions using the dimension of the uphill
-desired_x = max_x-min_x
-desired_y = 3.0
-desired_z = min_z
+    # Scaling to the desired dimensions using the dimension of the uphill
+    desired_x = max_x-min_x
+    desired_y = 3.0
+    desired_z = min_z
 
-# Calculate the current bounding box size of the mesh
-mesh = text_obj.data
-min_coords = [min(v.co[i] for v in mesh.vertices) for i in range(3)]
-max_coords = [max(v.co[i] for v in mesh.vertices) for i in range(3)]
-current_x = max_coords[0] - min_coords[0]
-current_y = max_coords[1] - min_coords[1]
-current_z = max_coords[2] - min_coords[2]
-scale_x = desired_x / current_x
-scale_y = desired_y / current_y
-scale_z = desired_z / current_z
-text_obj.scale = (scale_x, scale_y, scale_z)
-bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    # Calculate the current bounding box size of the mesh
+    mesh = text_obj.data
+    min_coords = [min(v.co[i] for v in mesh.vertices) for i in range(3)]
+    max_coords = [max(v.co[i] for v in mesh.vertices) for i in range(3)]
+    current_x = max_coords[0] - min_coords[0]
+    current_y = max_coords[1] - min_coords[1]
+    current_z = max_coords[2] - min_coords[2]
+    scale_x = desired_x / current_x
+    scale_y = desired_y / current_y
+    scale_z = desired_z / current_z
+    text_obj.scale = (scale_x, scale_y, scale_z)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
-min_coords = [min(v.co[i] for v in mesh.vertices) for i in range(3)]
-max_coords = [max(v.co[i] for v in mesh.vertices) for i in range(3)]
-center_x = (min_coords[0] + max_coords[0]) / 2
-center_y = (min_coords[1] + max_coords[1]) / 2
-text_obj.location.x -= center_x
-text_obj.location.y -= center_y
+    min_coords = [min(v.co[i] for v in mesh.vertices) for i in range(3)]
+    max_coords = [max(v.co[i] for v in mesh.vertices) for i in range(3)]
+    center_x = (min_coords[0] + max_coords[0]) / 2
+    center_y = (min_coords[1] + max_coords[1]) / 2
+    text_obj.location.x -= center_x
+    text_obj.location.y -= center_y
 
-bpy.ops.export_mesh.stl(filepath=text_stl_path)
-print(f"Text mesh has been saved to {text_stl_path}")
+    bpy.ops.export_mesh.stl(filepath=text_stl_path)
+    print(f"Text mesh has been saved to {text_stl_path}")
 
 ################################################
 #           Difference Mesh
@@ -170,8 +171,10 @@ print(f"Text mesh has been saved to {text_stl_path}")
 bpy.ops.object.select_all(action='SELECT')  # Select all objects
 bpy.ops.object.delete()
 
-bpy.ops.import_mesh.stl(filepath=text_stl_path)
-text_mesh = bpy.context.view_layer.objects.active
+if text_input.strip():
+    bpy.ops.import_mesh.stl(filepath=text_stl_path)
+    text_mesh = bpy.context.view_layer.objects.active
+    
 bpy.ops.import_mesh.stl(filepath=uphill_stl_path)
 uphill_mesh = bpy.context.view_layer.objects.active
 bpy.ops.import_mesh.stl(filepath=cube_path)
@@ -182,7 +185,7 @@ magnet_holder_mesh = bpy.context.view_layer.objects.active
 
 
 # Ensure both meshes are correctly imported
-if text_mesh and uphill_mesh:
+if uphill_mesh:
     
     # ---- Align Cube and Magnet Holder Meshes ----
     # Calculate Z-minimums
@@ -254,34 +257,35 @@ if text_mesh and uphill_mesh:
     
     
     # ---- Text Mesh Operations ----
-    text_mesh_min_z = min((text_mesh.matrix_world @ v.co).z for v in text_mesh.data.vertices)
-    uphill_min_z = min((uphill_mesh.matrix_world @ v.co).z for v in uphill_mesh.data.vertices)
+    if text_input.strip():
+        text_mesh_min_z = min((text_mesh.matrix_world @ v.co).z for v in text_mesh.data.vertices)
+        uphill_min_z = min((uphill_mesh.matrix_world @ v.co).z for v in uphill_mesh.data.vertices)
 
-    text_mesh.location[2] += uphill_min_z - text_mesh_min_z
+        text_mesh.location[2] += uphill_min_z - text_mesh_min_z
 
-    bpy.context.view_layer.update()
+        bpy.context.view_layer.update()
 
-    target_x_text = 2*x_translation - 20
-    
-    text_mesh.scale[0] = target_x_text / text_mesh.dimensions.x
-    
-    text_mesh.scale[1] = (max_y-min_y+50) / text_mesh.dimensions.y
+        target_x_text = 2*x_translation - 20
+        
+        text_mesh.scale[0] = target_x_text / text_mesh.dimensions.x
+        
+        text_mesh.scale[1] = (max_y-min_y+50) / text_mesh.dimensions.y
 
-    bpy.context.view_layer.update()
+        bpy.context.view_layer.update()
 
-    
-    boolean_modifier = uphill_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-    boolean_modifier.operation = 'DIFFERENCE'  # Set the operation type to "Difference"
-    boolean_modifier.use_self = True  # Allow the modifier to interact with the object itself
-    boolean_modifier.object = text_mesh  # Set the text_mesh as the target object for the operation
+        
+        boolean_modifier = uphill_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+        boolean_modifier.operation = 'DIFFERENCE'  # Set the operation type to "Difference"
+        boolean_modifier.use_self = True  # Allow the modifier to interact with the object itself
+        boolean_modifier.object = text_mesh  # Set the text_mesh as the target object for the operation
 
-    bpy.context.view_layer.objects.active = uphill_mesh
-    bpy.ops.object.modifier_apply(modifier=boolean_modifier.name)
-    
-    bpy.ops.object.duplicate(linked=False) 
+        bpy.context.view_layer.objects.active = uphill_mesh
+        bpy.ops.object.modifier_apply(modifier=boolean_modifier.name)
+        
+        bpy.ops.object.duplicate(linked=False) 
 
-    bpy.data.objects.remove(text_mesh, do_unlink=True)
-    bpy.context.view_layer.update()
+        bpy.data.objects.remove(text_mesh, do_unlink=True)
+        bpy.context.view_layer.update()
 
     
     # ---- Export the Final Mesh ----

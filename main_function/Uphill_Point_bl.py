@@ -77,7 +77,7 @@ class Uphill_Point_blender:
         _, indices = np.unique(points, axis=0, return_index=True)
         indices = np.sort(indices)
 
-        x, y = x[indices], y[indices]
+        x, y = x[indices], -y[indices]
         elevations = elevations[indices]
         tck, u = splprep([x, y], s=0)
 
